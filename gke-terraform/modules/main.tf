@@ -1,10 +1,35 @@
-module "gke" {
-  source           = "./modules/gke"
-  project_id       = var.project_id
-  region           = var.region
-  cluster_name     = var.cluster_name
-  network_name     = var.network_name
-  subnet_name      = var.subnet_name
-  node_count       = var.node_count
-  machine_type     = var.machine_type
+resource "google_compute_network" "vpc_network" {
+  name                    = var.network_name
+  auto_create_subnetworks = false
+}
+
+resource "google_compute_subnetwork" "subnet" {
+  name          = var.subnet_name
+  ip_cidr_range = "10.0.0.0/16"
+  region        = var.region
+  network       = google_compute_network.vpc_network.id
+}
+
+resource "google_container_cluster" "primary" {
+  name               = var.cluster_name
+  location           = var.region
+  network            = google_compute_network.vpc_network.self_link
+  subnetwork         = google_compute_subnetwork.subnet.self_link
+  remove_default_node_pool = true
+  initial_node_count = 1
+
+  deletion_protection = false
+}
+
+resource "google_container_node_pool" "primary_nodes" {
+  name       = "${var.cluster_name}-node-pool"
+  location   = var.region
+  cluster    = google_container_cluster.primary.name
+
+  node_config {
+    machine_type = var.machine_type
+    oauth_scopes = ["https://www.googleapis.com/auth/cloud-platform"]
+  }
+
+  initial_node_count = var.node_count
 }
