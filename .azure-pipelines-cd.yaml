@@ -1,0 +1,59 @@
+# azure-pipelines-cd.yaml
+trigger:
+- feature-branch
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+parameters:
+- name: frontendTag
+  type: string
+- name: backendTag
+  type: string
+
+variables:
+- group: azure-group
+
+stages:
+- stage: Deploy
+  displayName: "Deploy to GKE"
+  jobs:
+  - job: HelmDeploy
+    steps:
+    - task: DownloadSecureFile@1
+      name: gcpKey
+      inputs:
+        secureFile: 'gcp-key.json'
+
+    - task: Bash@3
+      displayName: "Install gcloud and kubectl"
+      inputs:
+        targetType: 'inline'
+        script: |
+          sudo apt-get update -y
+          sudo apt-get install -y google-cloud-cli kubectl
+
+    - task: Bash@3
+      displayName: "Authenticate to GCP and Get Cluster Credentials"
+      inputs:
+        targetType: 'inline'
+        script: |
+          gcloud auth activate-service-account --key-file=$(gcpKey.secureFilePath)
+          gcloud config set project $(PROJECT_ID)
+          gcloud container clusters get-credentials $(CLUSTER_NAME) --region $(REGION)
+
+    - task: HelmInstaller@1
+      inputs:
+        helmVersionToInstall: 'latest'
+
+    - task: Bash@3
+      displayName: "Deploy with Helm"
+      inputs:
+        targetType: 'inline'
+        script: |
+          helm upgrade --install messenger ./helm \
+            --set frontend.image.tag=${{ parameters.frontendTag }} \
+            --set backend.image.tag=${{ parameters.backendTag }} \
+            --set frontend.image.repository=$(REGION)-docker.pkg.dev/$(PROJECT_ID)/$(REPO)/frontend \
+            --set backend.image.repository=$(REGION)-docker.pkg.dev/$(PROJECT_ID)/$(REPO)/backend \
+            --namespace messenger --create-namespace

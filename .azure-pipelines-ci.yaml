@@ -1,0 +1,72 @@
+# azure-pipelines-ci.yaml
+trigger:
+- main
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+variables:
+- group: azure-group  # contains PROJECT_ID, REGION, REPO, etc.
+- name: IMAGE_TAG
+  value: $(Build.BuildId)
+- name: REGISTRY_URL
+  value: "$(REGION)-docker.pkg.dev"
+- name: FRONTEND_IMAGE
+  value: "$(REGISTRY_URL)/$(PROJECT_ID)/$(REPO)/frontend:$(IMAGE_TAG)"
+- name: BACKEND_IMAGE
+  value: "$(REGISTRY_URL)/$(PROJECT_ID)/$(REPO)/backend:$(IMAGE_TAG)"
+
+stages:
+- stage: BuildAndPush
+  displayName: "Build & Push Docker Images"
+  jobs:
+  - job: BuildPushJob
+    steps:
+    - task: DownloadSecureFile@1
+      name: gcpKey
+      inputs:
+        secureFile: 'gcp-key.json'
+
+    - task: Bash@3
+      displayName: "Install gcloud CLI"
+      inputs:
+        targetType: 'inline'
+        script: |
+          if ! command -v gcloud &> /dev/null; then
+            sudo apt-get update -y
+            sudo apt-get install -y apt-transport-https ca-certificates gnupg curl
+            echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] http://packages.cloud.google.com/apt cloud-sdk main" | sudo tee -a /etc/apt/sources.list.d/google-cloud-sdk.list
+            curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key add -
+            sudo apt-get update -y && sudo apt-get install -y google-cloud-cli
+          fi
+
+    - task: Bash@3
+      displayName: "Authenticate to GCP and Configure Docker"
+      inputs:
+        targetType: 'inline'
+        script: |
+          gcloud auth activate-service-account --key-file=$(gcpKey.secureFilePath)
+          gcloud auth configure-docker $(REGION)-docker.pkg.dev -q
+
+    - task: Bash@3
+      displayName: "Build & Push Frontend and Backend"
+      inputs:
+        targetType: 'inline'
+        script: |
+          echo "Building and pushing FRONTEND..."
+          docker build -t $(FRONTEND_IMAGE) ./frontend
+          docker push $(FRONTEND_IMAGE)
+
+          echo "Building and pushing BACKEND..."
+          docker build -t $(BACKEND_IMAGE) ./backend
+          docker push $(BACKEND_IMAGE)
+
+    # ✅ Trigger CD
+    - task: Bash@3
+      displayName: "Trigger CD Pipeline"
+      inputs:
+        targetType: 'inline'
+        script: |
+          echo "Triggering CD Pipeline..."
+          echo "$(AZURE_DEVOPS_PAT)" | az devops login --organization https://dev.azure.com/SailsTraining/DevopsIntern2
+          az pipelines run --name "messenger-cd" --parameters frontendTag=$(Build.BuildId) backendTag=$(Build.BuildId)
