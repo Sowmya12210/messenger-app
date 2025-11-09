@@ -1,6 +1,9 @@
 # azure-pipelines-cd.yaml
+
 trigger:
-- feature-branch
+  branches:
+    include:
+      - feature-branch
 
 pool:
   vmImage: 'ubuntu-latest'
@@ -15,10 +18,48 @@ variables:
 - group: azure-group
 
 stages:
+- stage: Terraform
+  displayName: "Provision GKE Cluster using Terraform"
+  jobs:
+  - job: TerraformApply
+    displayName: "Run Terraform to Create/Update GKE Cluster"
+    steps:
+    - task: DownloadSecureFile@1
+      name: gcpKey
+      inputs:
+        secureFile: 'gcp-key.json'
+
+    - task: Bash@3
+      displayName: "Install Terraform"
+      inputs:
+        targetType: 'inline'
+        script: |
+          sudo apt-get update -y
+          sudo apt-get install -y wget unzip
+          wget https://releases.hashicorp.com/terraform/1.7.0/terraform_1.7.0_linux_amd64.zip
+          unzip terraform_1.7.0_linux_amd64.zip
+          sudo mv terraform /usr/local/bin/
+          terraform -version
+
+    - task: Bash@3
+      displayName: "Terraform Init & Apply"
+      inputs:
+        targetType: 'inline'
+        workingDirectory: '$(System.DefaultWorkingDirectory)/gke-terraform'
+        script: |
+          echo "Setting up credentials..."
+          export GOOGLE_APPLICATION_CREDENTIALS=$(gcpKey.secureFilePath)
+
+          terraform init -backend-config="bucket=$(PROJECT_ID)-tfstate"
+          terraform plan -var="project_id=$(PROJECT_ID)" -var="region=$(REGION)" -out=tfplan
+          terraform apply -auto-approve tfplan
+
 - stage: Deploy
-  displayName: "Deploy to GKE"
+  displayName: "Deploy to GKE using Helm"
+  dependsOn: Terraform
   jobs:
   - job: HelmDeploy
+    displayName: "Helm Deploy to GKE"
     steps:
     - task: DownloadSecureFile@1
       name: gcpKey
@@ -31,29 +72,33 @@ stages:
         targetType: 'inline'
         script: |
           sudo apt-get update -y
-          sudo apt-get install -y google-cloud-cli kubectl
+          sudo apt-get install -y apt-transport-https ca-certificates gnupg curl
+          echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] https://packages.cloud.google.com/apt cloud-sdk main" | sudo tee -a /etc/apt/sources.list.d/google-cloud-sdk.list
+          curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key add -
+          sudo apt-get update -y && sudo apt-get install -y google-cloud-cli kubectl
 
     - task: Bash@3
-      displayName: "Authenticate to GCP and Get Cluster Credentials"
+      displayName: "Authenticate and Get Cluster Credentials"
       inputs:
         targetType: 'inline'
         script: |
           gcloud auth activate-service-account --key-file=$(gcpKey.secureFilePath)
           gcloud config set project $(PROJECT_ID)
           gcloud container clusters get-credentials $(CLUSTER_NAME) --region $(REGION)
+          kubectl get nodes
 
     - task: HelmInstaller@1
       inputs:
         helmVersionToInstall: 'latest'
 
     - task: Bash@3
-      displayName: "Deploy with Helm"
+      displayName: "Deploy Application with Helm"
       inputs:
         targetType: 'inline'
         script: |
           helm upgrade --install messenger ./helm \
-            --set frontend.image.tag=${{ parameters.frontendTag }} \
-            --set backend.image.tag=${{ parameters.backendTag }} \
             --set frontend.image.repository=$(REGION)-docker.pkg.dev/$(PROJECT_ID)/$(REPO)/frontend \
             --set backend.image.repository=$(REGION)-docker.pkg.dev/$(PROJECT_ID)/$(REPO)/backend \
+            --set frontend.image.tag=${{ parameters.frontendTag }} \
+            --set backend.image.tag=${{ parameters.backendTag }} \
             --namespace messenger --create-namespace
