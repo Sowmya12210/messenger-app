@@ -26,9 +26,9 @@ variable "subnet_name" {
 }
 
 variable "node_count" {
-  default = 2
+  default = 1
 }
 
 variable "machine_type" {
-  default = "e2-medium"
+  default = "e2-small"
 }
