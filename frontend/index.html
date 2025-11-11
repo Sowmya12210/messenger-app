@@ -180,7 +180,7 @@
       if (!text) return;
 
       try {
-        await fetch("https://136.118.152.202:5000/messages", {
+        await fetch("http://136.118.152.202:5000/messages", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ text })
