@@ -87,5 +87,5 @@ stages:
           az devops configure --defaults organization=https://dev.azure.com/SailsTraining/ project="Devops Intern2"
           az devops login --organization https://dev.azure.com/SailsTraining/ <<< "$(AZURE_DEVOPS_PAT)"
           
-          az pipelines run --name "azure-pipeline-messenger-cd" \
+          az pipelines run --name "azure-pipelines-cd" \
             --parameters frontendTag=$(Build.BuildId) backendTag=$(Build.BuildId)

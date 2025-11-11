@@ -3,7 +3,7 @@
 trigger:
   branches:
     include:
-      - none #feature-branch
+      - feature-branch
 
 pool:
   vmImage: 'ubuntu-latest'
