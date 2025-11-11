@@ -151,7 +151,7 @@
     async function loadMessages() {
       list.innerHTML = "";
       try {
-        const res = await fetch("http://localhost:5000/messages");
+        const res = await fetch("http://34.118.227.208:5000/messages");
         const messages = await res.json();
 
         if (!Array.isArray(messages)) return;
