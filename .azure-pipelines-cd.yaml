@@ -159,9 +159,9 @@ stages:
 
           echo "Deploying Helm chart from: $CHART_DIR"
       
-          if [ -f "$CHART_DIR/Chart.yaml" ]; then
+          if [ -f "$CHART_DIR/chart.yaml" ]; then
              echo "Chart.yaml found:"
-             cat "$CHART_DIR/Chart.yaml"
+             cat "$CHART_DIR/chart.yaml"
           else
              echo "ERROR: Chart.yaml not found in $CHART_DIR"
              ls -l "$CHART_DIR"
