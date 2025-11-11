@@ -3,7 +3,7 @@
 trigger:
   branches:
     include:
-      - feature-branch
+      - none #feature-branch
 
 pool:
   vmImage: 'ubuntu-latest'
@@ -11,8 +11,11 @@ pool:
 parameters:
 - name: frontendTag
   type: string
+  default: 'latest'
 - name: backendTag
   type: string
+  default: 'latest'
+
 
 variables:
 - group: azure-group
@@ -47,13 +50,38 @@ stages:
         targetType: 'inline'
         workingDirectory: '$(System.DefaultWorkingDirectory)/gke-terraform'
         script: |
-          echo "Setting up credentials..."
           export GOOGLE_APPLICATION_CREDENTIALS=$(gcpKey.secureFilePath)
+          gcloud auth activate-service-account --key-file=$GOOGLE_APPLICATION_CREDENTIALS
+          gcloud config set project $(PROJECT_ID)
 
-          terraform init -backend-config="bucket=$(PROJECT_ID)-tfstate"
-          terraform plan -var="project_id=$(PROJECT_ID)" -var="region=$(REGION)" -out=tfplan
-          terraform apply -auto-approve tfplan
+          echo "Checking if cluster $(CLUSTER_NAME) exists..."
+          if gcloud container clusters describe $(CLUSTER_NAME) --region $(REGION) >/dev/null 2>&1; then
+            echo "✅ Cluster $(CLUSTER_NAME) already exists. Skipping Terraform apply."
+          else
+            echo "🚀 Cluster not found. Creating it with Terraform..."
+            terraform init
+            terraform plan -out=tfplan \
+              -var="project_id=$(PROJECT_ID)" \
+              -var="region=$(REGION)" \
+              -var="cluster_name=$(CLUSTER_NAME)" \
+              -out=tfplan
+            terraform apply -auto-approve tfplan
+          fi
+          # echo "Setting up credentials..."
+          # export GOOGLE_APPLICATION_CREDENTIALS=$(gcpKey.secureFilePath)
 
+          # echo "Using Project ID: $(PROJECT_ID)"
+          # echo "Using Region: $(REGION)"
+          # echo "Using Cluster Name: $(CLUSTER_NAME)"
+
+          # terraform init
+          # terraform plan \
+          # -var "project_id=$(PROJECT_ID)" \
+          # -var "region=$(REGION)" \
+          # -var "cluster_name=$(CLUSTER_NAME)" \
+          # -out=tfplan
+
+          # terraform apply -auto-approve tfplan
 - stage: Deploy
   displayName: "Deploy to GKE using Helm"
   dependsOn: Terraform
@@ -71,11 +99,40 @@ stages:
       inputs:
         targetType: 'inline'
         script: |
+          echo " Setting up Google Cloud SDK repository with the new key..."
           sudo apt-get update -y
           sudo apt-get install -y apt-transport-https ca-certificates gnupg curl
-          echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] https://packages.cloud.google.com/apt cloud-sdk main" | sudo tee -a /etc/apt/sources.list.d/google-cloud-sdk.list
-          curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key add -
-          sudo apt-get update -y && sudo apt-get install -y google-cloud-cli kubectl
+
+          # Remove any old key to prevent conflicts
+          sudo rm -f /usr/share/keyrings/cloud.google.gpg
+
+          # Add the new Google Cloud public key securely
+          curl -fsSL https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo gpg --dearmor -o /usr/share/keyrings/cloud.google.gpg
+
+          # Add the repo using the signed key
+          echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] https://packages.cloud.google.com/apt cloud-sdk main" | sudo tee /etc/apt/sources.list.d/google-cloud-sdk.list
+
+          # Install packages
+          sudo apt-get update -y
+          sudo apt-get install -y google-cloud-cli kubectl google-cloud-sdk-gke-gcloud-auth-plugin
+
+          echo " Checking installations..."
+          gcloud version
+          kubectl version --client
+
+          echo " Finding and linking gke-gcloud-auth-plugin..."
+          PLUGIN_PATH=$(find /usr/lib/google-cloud-sdk -name gke-gcloud-auth-plugin | head -n 1 || true)
+          if [ -f "$PLUGIN_PATH" ]; then
+            sudo ln -sf "$PLUGIN_PATH" /usr/local/bin/gke-gcloud-auth-plugin
+            echo "Plugin linked to /usr/local/bin/"
+          else
+            echo " Plugin binary not found! Trying reinstall..."
+            sudo apt-get install --reinstall -y google-cloud-sdk-gke-gcloud-auth-plugin
+            sudo find /usr -name gke-gcloud-auth-plugin
+          fi
+
+          echo "Final check:"
+          which gke-gcloud-auth-plugin || echo " Plugin still not found!"
 
     - task: Bash@3
       displayName: "Authenticate and Get Cluster Credentials"
@@ -83,6 +140,7 @@ stages:
         targetType: 'inline'
         script: |
           gcloud auth activate-service-account --key-file=$(gcpKey.secureFilePath)
+          export USE_GKE_GCLOUD_AUTH_PLUGIN=True
           gcloud config set project $(PROJECT_ID)
           gcloud container clusters get-credentials $(CLUSTER_NAME) --region $(REGION)
           kubectl get nodes
@@ -90,15 +148,30 @@ stages:
     - task: HelmInstaller@1
       inputs:
         helmVersionToInstall: 'latest'
-
     - task: Bash@3
       displayName: "Deploy Application with Helm"
       inputs:
         targetType: 'inline'
         script: |
-          helm upgrade --install messenger ./helm \
+          CHART_DIR="$(System.DefaultWorkingDirectory)/helm"   # path to the folder containing Chart.yaml
+          RELEASE_NAME="messenger-app"
+          NAMESPACE="messenger"
+
+          echo "Deploying Helm chart from: $CHART_DIR"
+      
+          if [ -f "$CHART_DIR/Chart.yaml" ]; then
+             echo "Chart.yaml found:"
+             cat "$CHART_DIR/Chart.yaml"
+          else
+             echo "ERROR: Chart.yaml not found in $CHART_DIR"
+             ls -l "$CHART_DIR"
+             exit 1
+          fi
+          helm upgrade --install $RELEASE_NAME "$CHART_DIR" \
             --set frontend.image.repository=$(REGION)-docker.pkg.dev/$(PROJECT_ID)/$(REPO)/frontend \
             --set backend.image.repository=$(REGION)-docker.pkg.dev/$(PROJECT_ID)/$(REPO)/backend \
             --set frontend.image.tag=${{ parameters.frontendTag }} \
             --set backend.image.tag=${{ parameters.backendTag }} \
-            --namespace messenger --create-namespace
+            --namespace $NAMESPACE --create-namespace
+
+    
