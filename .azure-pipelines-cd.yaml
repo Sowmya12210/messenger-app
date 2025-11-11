@@ -145,33 +145,37 @@ stages:
           gcloud container clusters get-credentials $(CLUSTER_NAME) --region $(REGION)
           kubectl get nodes
 
-    - task: HelmInstaller@1
-      inputs:
-        helmVersionToInstall: 'latest'
     - task: Bash@3
       displayName: "Deploy Application with Helm"
       inputs:
         targetType: 'inline'
         script: |
-          CHART_DIR="$(System.DefaultWorkingDirectory)/helm"   # path to the folder containing Chart.yaml
+          CHART_DIR="$(System.DefaultWorkingDirectory)/helm"   # path to folder containing Chart.yaml
           RELEASE_NAME="messenger-app"
           NAMESPACE="messenger"
 
           echo "Deploying Helm chart from: $CHART_DIR"
-      
-          if [ -f "$CHART_DIR/chart.yaml" ]; then
-             echo "Chart.yaml found:"
-             cat "$CHART_DIR/chart.yaml"
+
+      # Detect Chart file (case-insensitive)
+          if [ -f "$CHART_DIR/Chart.yaml" ]; then
+             CHART_FILE="Chart.yaml"
+          elif [ -f "$CHART_DIR/chart.yaml" ]; then
+             CHART_FILE="chart.yaml"
           else
-             echo "ERROR: Chart.yaml not found in $CHART_DIR"
+             echo "ERROR: No Chart.yaml or chart.yaml found in $CHART_DIR"
              ls -l "$CHART_DIR"
              exit 1
           fi
-          helm upgrade --install $RELEASE_NAME "$CHART_DIR" \
-            --set frontend.image.repository=$(REGION)-docker.pkg.dev/$(PROJECT_ID)/$(REPO)/frontend \
-            --set backend.image.repository=$(REGION)-docker.pkg.dev/$(PROJECT_ID)/$(REPO)/backend \
-            --set frontend.image.tag=${{ parameters.frontendTag }} \
-            --set backend.image.tag=${{ parameters.backendTag }} \
-            --namespace $NAMESPACE --create-namespace
+
+         echo "$CHART_FILE found:"
+         cat "$CHART_DIR/$CHART_FILE"
+
+      # Upgrade or install Helm release
+         helm upgrade --install $RELEASE_NAME "$CHART_DIR" \
+           --set frontend.image.repository=$(REGION)-docker.pkg.dev/$(PROJECT_ID)/$(REPO)/frontend \
+           --set backend.image.repository=$(REGION)-docker.pkg.dev/$(PROJECT_ID)/$(REPO)/backend \
+           --set frontend.image.tag=${{ parameters.frontendTag }} \
+           --set backend.image.tag=${{ parameters.backendTag }} \
+           --namespace $NAMESPACE --create-namespace
 
     
