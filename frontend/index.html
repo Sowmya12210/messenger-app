@@ -151,7 +151,7 @@
     async function loadMessages() {
       list.innerHTML = "";
       try {
-        const res = await fetch("http://34.118.227.208:5000/messages");
+        const res = await fetch("http://136.118.152.202:5000/messages");
         const messages = await res.json();
 
         if (!Array.isArray(messages)) return;
@@ -180,7 +180,7 @@
       if (!text) return;
 
       try {
-        await fetch("http://localhost:5000/messages", {
+        await fetch("https://136.118.152.202:5000/messages", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ text })
