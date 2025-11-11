@@ -156,7 +156,7 @@ stages:
 
           echo "Deploying Helm chart from: $CHART_DIR"
 
-      # Detect Chart file (case-insensitive)
+     
           if [ -f "$CHART_DIR/Chart.yaml" ]; then
              CHART_FILE="Chart.yaml"
           elif [ -f "$CHART_DIR/chart.yaml" ]; then
@@ -167,15 +167,15 @@ stages:
              exit 1
           fi
 
-         echo "$CHART_FILE found:"
-         cat "$CHART_DIR/$CHART_FILE"
+          echo "$CHART_FILE found:"
+          cat "$CHART_DIR/$CHART_FILE"
 
-      # Upgrade or install Helm release
-         helm upgrade --install $RELEASE_NAME "$CHART_DIR" \
-           --set frontend.image.repository=$(REGION)-docker.pkg.dev/$(PROJECT_ID)/$(REPO)/frontend \
-           --set backend.image.repository=$(REGION)-docker.pkg.dev/$(PROJECT_ID)/$(REPO)/backend \
-           --set frontend.image.tag=${{ parameters.frontendTag }} \
-           --set backend.image.tag=${{ parameters.backendTag }} \
-           --namespace $NAMESPACE --create-namespace
+   
+          helm upgrade --install $RELEASE_NAME "$CHART_DIR" \
+            --set frontend.image.repository=$(REGION)-docker.pkg.dev/$(PROJECT_ID)/$(REPO)/frontend \
+            --set backend.image.repository=$(REGION)-docker.pkg.dev/$(PROJECT_ID)/$(REPO)/backend \
+            --set frontend.image.tag=${{ parameters.frontendTag }} \
+            --set backend.image.tag=${{ parameters.backendTag }} \
+            --namespace $NAMESPACE --create-namespace
 
     
