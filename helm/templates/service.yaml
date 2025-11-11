@@ -11,7 +11,7 @@ spec:
   ports:
     - port: 5000
       targetPort: {{ .Values.backend.port }}
-  type: ClusterIP
+  type: LoadBalancer
 ---
 # Database service (headless)
 apiVersion: v1
