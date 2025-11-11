@@ -9,7 +9,7 @@ spec:
   selector:
     app: backend
   ports:
-    - port: 5000
+    - port: {{ .Values.backend.port }}
       targetPort: {{ .Values.backend.port }}
   type: LoadBalancer
 ---
@@ -35,6 +35,6 @@ spec:
   selector:
     app: frontend
   ports:
-    - port: 80
+    - port: {{ .Values.frontend.port }}
       targetPort: {{ .Values.frontend.port }}
   type: LoadBalancer
