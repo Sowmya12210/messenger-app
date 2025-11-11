@@ -1,6 +1,6 @@
-# azure-pipelines-ci.yaml
 trigger:
-- main
+- feature-branch
+
 
 pool:
   vmImage: 'ubuntu-latest'
@@ -21,9 +21,11 @@ stages:
   displayName: "Build & Push Docker Images"
   jobs:
   - job: BuildPushJob
+    displayName: "Build and Push to Artifact Registry"
     steps:
     - task: DownloadSecureFile@1
       name: gcpKey
+      displayName: "Download GCP Key"
       inputs:
         secureFile: 'gcp-key.json'
 
@@ -53,20 +55,37 @@ stages:
       inputs:
         targetType: 'inline'
         script: |
-          echo "Building and pushing FRONTEND..."
-          docker build -t $(FRONTEND_IMAGE) ./frontend
-          docker push $(FRONTEND_IMAGE)
+          echo "Building and pushing the FRONTEND..."
+          FRONTEND_BASE=$(REGISTRY_URL)/$(PROJECT_ID)/$(REPO)/frontend
+          docker build -t $FRONTEND_BASE:$(Build.BuildId) -t $FRONTEND_BASE:latest ./frontend
+          docker push $FRONTEND_BASE --all-tags
 
           echo "Building and pushing BACKEND..."
-          docker build -t $(BACKEND_IMAGE) ./backend
-          docker push $(BACKEND_IMAGE)
+          BACKEND_BASE=$(REGISTRY_URL)/$(PROJECT_ID)/$(REPO)/backend
+          docker build -t $BACKEND_BASE:$(Build.BuildId) -t $BACKEND_BASE:latest ./backend
+          docker push $BACKEND_BASE --all-tags
 
-    # ✅ Trigger CD
+          # docker build -t $(FRONTEND_IMAGE) ./frontend
+          # docker tag $(FRONTEND_IMAGE) $(REGISTRY_URL)/$(PROJECT_ID)/$(REPO)/frontend:latest
+          # docker push $(FRONTEND_IMAGE)
+          # docker push $(REGISTRY_URL)/$(PROJECT_ID)/$(REPO)/frontend:latest
+
+          # echo "Building and pushing BACKEND..."
+          # docker build -t $(BACKEND_IMAGE) ./backend
+          # docker tag $(BACKEND_IMAGE) $(REGISTRY_URL)/$(PROJECT_ID)/$(REPO)/backend:latest
+          # docker push $(BACKEND_IMAGE)
+          # docker push $(REGISTRY_URL)/$(PROJECT_ID)/$(REPO)/backend:latest
+
     - task: Bash@3
       displayName: "Trigger CD Pipeline"
+      env:
+        AZURE_DEVOPS_EXT_PAT: $(AZURE_DEVOPS_PAT)
       inputs:
         targetType: 'inline'
         script: |
           echo "Triggering CD Pipeline..."
-          echo "$(AZURE_DEVOPS_PAT)" | az devops login --organization https://dev.azure.com/SailsTraining/DevopsIntern2
-          az pipelines run --name "messenger-cd" --parameters frontendTag=$(Build.BuildId) backendTag=$(Build.BuildId)
+          az devops configure --defaults organization=https://dev.azure.com/SailsTraining/ project="Devops Intern2"
+          az devops login --organization https://dev.azure.com/SailsTraining/ <<< "$(AZURE_DEVOPS_PAT)"
+          
+          az pipelines run --name "azure-pipelines-cd" \
+            --parameters frontendTag=$(Build.BuildId) backendTag=$(Build.BuildId)

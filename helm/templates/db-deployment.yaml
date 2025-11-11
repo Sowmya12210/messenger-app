@@ -14,14 +14,14 @@ spec:
     spec:
       containers:
         - name: mysql
-          image: {{ .Values.db.image }}
+          image: {{ .Values.mysql.image }}
           env:
             - name: MYSQL_ROOT_PASSWORD
-              value: "{{ .Values.db.rootPassword }}"
+              value: "{{ .Values.mysql.rootPassword }}"
             - name: MYSQL_DATABASE
-              value: "{{ .Values.db.database }}"
+              value: "{{ .Values.mysql.database }}"
           ports:
-            - containerPort: {{ .Values.db.port }}
+            - containerPort: {{ .Values.mysql.service.port }}
           volumeMounts:
             - name: mysql-storage
               mountPath: /var/lib/mysql
@@ -38,4 +38,4 @@ spec:
   accessModes: [ "ReadWriteOnce" ]
   resources:
     requests:
-      storage: {{ .Values.db.storage }}
+      storage: {{ .Values.mysql.storage | default "1Gi" }}

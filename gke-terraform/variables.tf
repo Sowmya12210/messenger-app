@@ -15,15 +15,15 @@ variable "credentials_file" {
   default     = "gcp-key.json"
 }
 
-variable "network_name" {
-  description = "VPC name"
-  default     = "messenger-vpc"
-}
+# variable "network_name" {
+#   description = "VPC name"
+#   default     = "messenger-vpc"
+# }
 
-variable "subnet_name" {
-  description = "Subnet name"
-  default     = "messenger-subnet"
-}
+# variable "subnet_name" {
+#   description = "Subnet name"
+#   default     = "messenger-subnet"
+# }
 
 variable "node_count" {
   default = 1

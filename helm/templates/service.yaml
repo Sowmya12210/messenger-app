@@ -20,8 +20,8 @@ spec:
   selector:
     app: db
   ports:
-    - port: {{ .Values.db.port }}
-      targetPort: {{ .Values.db.port }}
+    - port: {{ .Values.mysql.service.port }}
+      targetPort: {{ .Values.mysql.service.port }}
   clusterIP: None
 ---
 # Frontend service (external)
