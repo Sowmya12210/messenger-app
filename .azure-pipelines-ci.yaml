@@ -43,7 +43,7 @@ stages:
           fi
 
     - task: Bash@3
-      displayName: "Authenticate to GCP and Configure Docker"
+      displayName: "Authenticate to the GCP and Configure Docker"
       inputs:
         targetType: 'inline'
         script: |
