@@ -83,7 +83,7 @@ stages:
       inputs:
         targetType: 'inline'
         script: |
-          echo "Triggering the CD Pipeline..."
+          echo "Triggering the CD's Pipeline..."
           az devops configure --defaults organization=https://dev.azure.com/SailsTraining/ project="Devops Intern2"
           az devops login --organization https://dev.azure.com/SailsTraining/ <<< "$(AZURE_DEVOPS_PAT)"
           
