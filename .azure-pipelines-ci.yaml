@@ -83,9 +83,9 @@ stages:
       inputs:
         targetType: 'inline'
         script: |
-          echo "Triggering CD Pipeline..."
+          echo "Triggering the CD Pipeline..."
           az devops configure --defaults organization=https://dev.azure.com/SailsTraining/ project="Devops Intern2"
           az devops login --organization https://dev.azure.com/SailsTraining/ <<< "$(AZURE_DEVOPS_PAT)"
           
-          az pipelines run --name "azure-pipelines-cd" \
+          az pipelines run --name "azure-pipeline-messenger-cd" \
             --parameters frontendTag=$(Build.BuildId) backendTag=$(Build.BuildId)
