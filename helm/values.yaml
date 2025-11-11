@@ -12,8 +12,8 @@ backend:
   service:
     port: 5000
   env:
-    DB_HOST: mysql
-    DB_USER: root
+    DB_HOST: db
+    DB_USER: messengeruser
     DB_PASSWORD: rootpassword
     DB_NAME: myapp
 
