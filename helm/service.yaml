@@ -1,0 +1,40 @@
+
+
+# Backend service (internal)
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend
+spec:
+  selector:
+    app: backend
+  ports:
+    - port: 5000
+      targetPort: {{ .Values.backend.port }}
+  type: ClusterIP
+---
+# Database service (headless)
+apiVersion: v1
+kind: Service
+metadata:
+  name: db
+spec:
+  selector:
+    app: db
+  ports:
+    - port: {{ .Values.mysql.service.port }}
+      targetPort: {{ .Values.mysql.service.port }}
+  clusterIP: None
+---
+# Frontend service (external)
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend
+spec:
+  selector:
+    app: frontend
+  ports:
+    - port: 80
+      targetPort: {{ .Values.frontend.port }}
+  type: LoadBalancer
