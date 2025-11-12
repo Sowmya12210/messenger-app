@@ -37,7 +37,7 @@ spec:
             claimName: db-pvc
         - name: db-init
           configMap:
-            name: db-init-configmap
+            name: db-configmap
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
