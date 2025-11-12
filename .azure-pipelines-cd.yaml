@@ -53,20 +53,15 @@ stages:
           export GOOGLE_APPLICATION_CREDENTIALS=$(gcpKey.secureFilePath)
           gcloud auth activate-service-account --key-file=$GOOGLE_APPLICATION_CREDENTIALS
           gcloud config set project $(PROJECT_ID)
-
-          echo "Checking if cluster $(CLUSTER_NAME) exists..."
-          if gcloud container clusters describe $(CLUSTER_NAME) --region $(REGION) >/dev/null 2>&1; then
-            echo "✅ Cluster $(CLUSTER_NAME) already exists. Skipping Terraform apply."
-          else
-            echo "🚀 Cluster not found. Creating it with Terraform..."
-            terraform init
-            terraform plan -out=tfplan \
-              -var="project_id=$(PROJECT_ID)" \
-              -var="region=$(REGION)" \
-              -var="cluster_name=$(CLUSTER_NAME)" \
-              -out=tfplan
-            terraform apply -auto-approve tfplan
-          fi
+            echo " Creating it with Terraform..."
+          terraform init
+          terraform plan -out=tfplan \
+            -var="project_id=$(PROJECT_ID)" \
+            -var="region=$(REGION)" \
+            -var="cluster_name=$(CLUSTER_NAME)" \
+            -var="gcs_bucket=$(TF-BUCKET)"
+            -out=tfplan
+          terraform apply -auto-approve tfplan
           # echo "Setting up credentials..."
           # export GOOGLE_APPLICATION_CREDENTIALS=$(gcpKey.secureFilePath)
 

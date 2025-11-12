@@ -32,3 +32,7 @@ variable "node_count" {
 variable "machine_type" {
   default = "e2-small"
 }
+
+variable "bucket_name" { 
+  default     = "tf-bucket"
+}
