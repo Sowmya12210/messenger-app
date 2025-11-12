@@ -5,4 +5,4 @@ variable "cluster_name" {}
 # variable "subnet_name" {}
 variable "node_count" {}
 variable "machine_type" {}
-variable "bucket_name" {}
+

@@ -10,15 +10,6 @@
 #   network       = google_compute_network.vpc_network.id
 # }
 
-resource "google_storage_bucket" "tf_state_bucket" {
-  name          = var.bucket_name
-  location      = var.region
-  force_destroy = true   
-  versioning {
-    enabled = true      
-  }
-}
-
 resource "google_container_cluster" "primary" {
   name               = var.cluster_name
   location           = var.region

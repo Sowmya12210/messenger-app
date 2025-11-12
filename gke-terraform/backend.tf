@@ -1,6 +1,6 @@
 terraform {
   backend "gcs" {
-    bucket      = var.bucket_name
+    bucket      = "tf-bucket"
     prefix      = "gke-cluster"                
     credentials = var.credentials_file
   }
