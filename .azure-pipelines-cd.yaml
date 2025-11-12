@@ -81,11 +81,11 @@ stages:
 
           # terraform apply -auto-approve tfplan
 - stage: Deploy
-  displayName: "Deploy to GKE using Helm"
+  displayName: "Deploy to GKE "
   dependsOn: Terraform
   jobs:
-  - job: HelmDeploy
-    displayName: "Helm Deploy to GKE"
+  - job: Deploy
+    displayName: "Deploy to GKE"
     steps:
     - task: DownloadSecureFile@1
       name: gcpKey
@@ -138,9 +138,6 @@ stages:
         targetType: 'inline'
         script: |
           kubectl create configmap db-configmap --from-file=db/init.sql -n messenger --dry-run=client -o yaml | kubectl apply -f -
-
-          kubectl apply -f k8s/namespace.yaml
-          kubectl apply -f k8s/db-configmap.yaml
           kubectl apply -f k8s/db-deployment.yaml
           kubectl apply -f k8s/backend-deployment.yaml
           kubectl apply -f k8s/frontend-deployment.yaml
