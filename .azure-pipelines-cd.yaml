@@ -101,24 +101,13 @@ stages:
           sudo apt-get update -y
           sudo apt-get install -y apt-transport-https ca-certificates gnupg curl
 
-          # Remove any old key to prevent conflicts
           sudo rm -f /usr/share/keyrings/cloud.google.gpg
-
-          # Add the new Google Cloud public key securely
           curl -fsSL https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo gpg --dearmor -o /usr/share/keyrings/cloud.google.gpg
-
-          # Add the repo using the signed key
           echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] https://packages.cloud.google.com/apt cloud-sdk main" | sudo tee /etc/apt/sources.list.d/google-cloud-sdk.list
-
-          # Install packages
           sudo apt-get update -y
           sudo apt-get install -y google-cloud-cli kubectl google-cloud-sdk-gke-gcloud-auth-plugin
-
-          echo " Checking installations..."
           gcloud version
           kubectl version --client
-
-          echo " Finding and linking gke-gcloud-auth-plugin..."
           PLUGIN_PATH=$(find /usr/lib/google-cloud-sdk -name gke-gcloud-auth-plugin | head -n 1 || true)
           if [ -f "$PLUGIN_PATH" ]; then
             sudo ln -sf "$PLUGIN_PATH" /usr/local/bin/gke-gcloud-auth-plugin
@@ -144,36 +133,17 @@ stages:
           kubectl get nodes
 
     - task: Bash@3
-      displayName: "Deploy Application with Helm"
+      displayName: "Deploy"
       inputs:
         targetType: 'inline'
         script: |
-          CHART_DIR="$(System.DefaultWorkingDirectory)/helm"   # path to folder containing Chart.yaml
-          RELEASE_NAME="messenger-app"
-          NAMESPACE="messenger"
+          kubectl create configmap db-configmap --from-file=db/init.sql -n messenger --dry-run=client -o yaml | kubectl apply -f -
 
-          echo "Deploying Helm chart from: $CHART_DIR"
-
-     
-          if [ -f "$CHART_DIR/Chart.yaml" ]; then
-             CHART_FILE="Chart.yaml"
-          elif [ -f "$CHART_DIR/chart.yaml" ]; then
-             CHART_FILE="chart.yaml"
-          else
-             echo "ERROR: No Chart.yaml or chart.yaml found in $CHART_DIR"
-             ls -l "$CHART_DIR"
-             exit 1
-          fi
-
-          echo "$CHART_FILE found:"
-          cat "$CHART_DIR/$CHART_FILE"
-
-   
-          helm upgrade --install $RELEASE_NAME "$CHART_DIR" \
-            --set frontend.image.repository=$(REGION)-docker.pkg.dev/$(PROJECT_ID)/$(REPO)/frontend \
-            --set backend.image.repository=$(REGION)-docker.pkg.dev/$(PROJECT_ID)/$(REPO)/backend \
-            --set frontend.image.tag=${{ parameters.frontendTag }} \
-            --set backend.image.tag=${{ parameters.backendTag }} \
-            --namespace $NAMESPACE --create-namespace
-
+          kubectl apply -f k8s/namespace.yaml
+          kubectl apply -f k8s/db-configmap.yaml
+          kubectl apply -f k8s/db-deployment.yaml
+          kubectl apply -f k8s/backend-deployment.yaml
+          kubectl apply -f k8s/frontend-deployment.yaml
+          kubectl apply -f k8s/service.yaml
+          kubectl apply -f k8s/ingress.yaml
     

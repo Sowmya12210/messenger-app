@@ -3,7 +3,7 @@ kind: Deployment
 metadata:
   name: backend
 spec:
-  replicas: {{ .Values.backend.replicas | default 1 }}
+  replicas: 1
   selector:
     matchLabels:
       app: backend
@@ -14,18 +14,18 @@ spec:
     spec:
       containers:
         - name: backend
-          image: {{ .Values.backend.image.repository }}:{{ .Values.backend.image.tag }}
+          image: us-west1-docker.pkg.dev/fluted-factor-438905-d2/azure-repo/backend:latest
           ports:
-            - containerPort: {{ .Values.backend.service.port }}
+            - containerPort: 5000
           env:
             - name: DB_HOST
-              value: "{{ .Values.backend.env.DB_HOST }}"
+              value: "db"
             - name: DB_USER
-              value: "{{ .Values.backend.env.DB_USER }}"
+              value: "root"
             - name: DB_PASSWORD
-              value: "{{ .Values.backend.env.DB_PASSWORD }}"
+              value: "rootpassword"
             - name: DB_NAME
-              value: "{{ .Values.backend.env.DB_NAME }}"
+              value: "myapp"
 
           # env:
           #   - name: DB_HOST

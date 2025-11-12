@@ -139,7 +139,7 @@
   </div>
 
   <script>
-    const BACKEND_URL = '{{ .Values.frontend.env.BACKEND_URL | default "http://backend:5000" }}';
+    //const BACKEND_URL = '{{ .Values.frontend.env.BACKEND_URL | default "http://backend:5000" }}';
     const form = document.getElementById("messageForm");
     const input = document.getElementById("messageInput");
     const list = document.getElementById("messagesList");
@@ -152,8 +152,8 @@
     async function loadMessages() {
       list.innerHTML = "";
       try {
-        // const res = await fetch("http://136.118.152.202:5000/messages");
-        const res = await fetch(`${BACKEND_URL}/messages`);
+        const res = await fetch("https://messenger.example.com/api");
+        //const res = await fetch(`${BACKEND_URL}/messages`);
 
         const messages = await res.json();
 
@@ -183,7 +183,7 @@
       if (!text) return;
 
       try {
-        await fetch(`${BACKEND_URL}/messages`, {
+        await fetch('https://messenger.example.com/api', {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ text })

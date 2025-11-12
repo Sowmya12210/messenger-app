@@ -1,13 +1,12 @@
-{{- if .Values.ingress.enabled }}
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: messenger-app-ingress
+  name: messenger-ingress
   annotations:
-    kubernetes.io/ingress.class: "gce" # or "nginx" if using NGINX ingress
+    kubernetes.io/ingress.class: "gce"
 spec:
   rules:
-    - host: {{ .Values.ingress.host }}
+    - host: messenger.example.com
       http:
         paths:
           - path: /
@@ -24,4 +23,3 @@ spec:
                 name: backend
                 port:
                   number: 5000
-{{- end }}
