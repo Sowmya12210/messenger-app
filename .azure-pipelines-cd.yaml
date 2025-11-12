@@ -25,7 +25,7 @@ stages:
   displayName: "Provision GKE Cluster using Terraform"
   jobs:
   - job: TerraformApply
-    displayName: "Run Terraform to Create/Update GKE Cluster"
+    displayName: "Run the Terraform to Create/Update GKE Cluster"
     steps:
     - task: DownloadSecureFile@1
       name: gcpKey
