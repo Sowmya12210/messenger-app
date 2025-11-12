@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
         - name: frontend
-          image: us-west1-docker.pkg.dev/fluted-factor-438905-d2/messenger-repo/frontend:latest
+          image: us-west1-docker.pkg.dev/fluted-factor-438905-d2/azure-repo/frontend:latest
           ports:
             - containerPort: 80
           env:
