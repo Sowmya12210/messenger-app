@@ -31,5 +31,5 @@ variable "machine_type" {
 }
 
 variable "bucket_name" { 
-  default     = "tf-bucket"
+  default     = "tf-bucket2"
 }
