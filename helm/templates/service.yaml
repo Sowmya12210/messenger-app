@@ -24,7 +24,7 @@ spec:
   ports:
     - port: {{ .Values.mysql.service.port }}
       targetPort: {{ .Values.mysql.service.port }}
-  clusterIP: None
+  type: clusterIP 
 ---
 # Frontend service (external)
 apiVersion: v1

@@ -4,6 +4,8 @@ frontend:
     tag: "latest"
   service:
     port: 80
+  env:
+    BACKEND_URL: "http://backend:5000"
 
 backend:
   image:
