@@ -1,0 +1,149 @@
+# azure-pipelines-cd.yaml
+
+trigger:
+  branches:
+    include:
+      - feature-branch
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+parameters:
+- name: frontendTag
+  type: string
+  default: 'latest'
+- name: backendTag
+  type: string
+  default: 'latest'
+
+
+variables:
+- group: azure-group
+
+stages:
+- stage: Terraform
+  displayName: "Provision GKE Cluster using Terraform"
+  jobs:
+  - job: TerraformApply
+    displayName: "Run the Terraform to Create/Update GKE Cluster"
+    steps:
+    - task: DownloadSecureFile@1
+      name: gcpKey
+      inputs:
+        secureFile: 'gcp-key.json'
+
+    - task: Bash@3
+      displayName: "Install Terraform"
+      inputs:
+        targetType: 'inline'
+        script: |
+          sudo apt-get update -y
+          sudo apt-get install -y wget unzip
+          wget https://releases.hashicorp.com/terraform/1.7.0/terraform_1.7.0_linux_amd64.zip
+          unzip terraform_1.7.0_linux_amd64.zip
+          sudo mv terraform /usr/local/bin/
+          terraform -version
+
+    - task: Bash@3
+      displayName: "Terraform Init & Apply"
+      inputs:
+        targetType: 'inline'
+        workingDirectory: '$(System.DefaultWorkingDirectory)/gke-terraform'
+        script: |
+          export GOOGLE_APPLICATION_CREDENTIALS=$(gcpKey.secureFilePath)
+          gcloud auth activate-service-account --key-file=$GOOGLE_APPLICATION_CREDENTIALS
+          gcloud config set project $(PROJECT_ID)
+            echo " Creating it with Terraform..."
+          BUCKET_NAME="tf-bucket2"
+          terraform init -backend-config="bucket=$BUCKET_NAME" \
+               -backend-config="prefix=gke-cluster" \
+               -backend-config="credentials=$GCP_APPLICATION_CREDENTIALS" -reconfigure
+          terraform plan \
+            -var="project_id=$(PROJECT_ID)" \
+            -var="region=$(REGION)" \
+            -var="cluster_name=$(CLUSTER_NAME)" \
+            -var="bucket_name=$(BUCKET_NAME)" \
+            -out=tfplan
+          terraform apply -auto-approve tfplan
+          # echo "Setting up credentials..."
+          # export GOOGLE_APPLICATION_CREDENTIALS=$(gcpKey.secureFilePath)
+
+          # echo "Using Project ID: $(PROJECT_ID)"
+          # echo "Using Region: $(REGION)"
+          # echo "Using Cluster Name: $(CLUSTER_NAME)"
+
+          # terraform init
+          # terraform plan \
+          # -var "project_id=$(PROJECT_ID)" \
+          # -var "region=$(REGION)" \
+          # -var "cluster_name=$(CLUSTER_NAME)" \
+          # -out=tfplan
+
+          # terraform apply -auto-approve tfplan
+- stage: Deploy
+  displayName: "Deploy to GKE using Helm"
+  dependsOn: Terraform
+  jobs:
+  - job: HelmDeploy
+    displayName: "Helm Deploy to GKE"
+    steps:
+    - task: DownloadSecureFile@1
+      name: gcpKey
+      inputs:
+        secureFile: 'gcp-key.json'
+
+    - task: Bash@3
+      displayName: "Install gcloud and kubectl"
+      inputs:
+        targetType: 'inline'
+        script: |
+          echo " Setting up Google Cloud SDK repository with the new key..."
+          sudo apt-get update -y
+          sudo apt-get install -y apt-transport-https ca-certificates gnupg curl
+
+          sudo rm -f /usr/share/keyrings/cloud.google.gpg
+          curl -fsSL https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo gpg --dearmor -o /usr/share/keyrings/cloud.google.gpg
+          echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] https://packages.cloud.google.com/apt cloud-sdk main" | sudo tee /etc/apt/sources.list.d/google-cloud-sdk.list
+          sudo apt-get update -y
+          sudo apt-get install -y google-cloud-cli kubectl google-cloud-sdk-gke-gcloud-auth-plugin
+          gcloud version
+          kubectl version --client
+          PLUGIN_PATH=$(find /usr/lib/google-cloud-sdk -name gke-gcloud-auth-plugin | head -n 1 || true)
+          if [ -f "$PLUGIN_PATH" ]; then
+            sudo ln -sf "$PLUGIN_PATH" /usr/local/bin/gke-gcloud-auth-plugin
+            echo "Plugin linked to /usr/local/bin/"
+          else
+            echo " Plugin binary not found! Trying reinstall..."
+            sudo apt-get install --reinstall -y google-cloud-sdk-gke-gcloud-auth-plugin
+            sudo find /usr -name gke-gcloud-auth-plugin
+          fi
+
+          echo "Final check:"
+          which gke-gcloud-auth-plugin || echo " Plugin still not found!"
+
+    - task: Bash@3
+      displayName: "Authenticate and Get Cluster Credentials"
+      inputs:
+        targetType: 'inline'
+        script: |
+          gcloud auth activate-service-account --key-file=$(gcpKey.secureFilePath)
+          export USE_GKE_GCLOUD_AUTH_PLUGIN=True
+          gcloud config set project $(PROJECT_ID)
+          gcloud container clusters get-credentials $(CLUSTER_NAME) --region $(REGION)
+          kubectl get nodes
+
+    - task: Bash@3
+      displayName: "Deploy"
+      inputs:
+        targetType: 'inline'
+        script: |
+          kubectl create configmap db-configmap --from-file=db/init.sql -n messenger --dry-run=client -o yaml | kubectl apply -f -
+
+          kubectl apply -f k8s/namespace.yaml
+          kubectl apply -f k8s/db-configmap.yaml
+          kubectl apply -f k8s/db-deployment.yaml
+          kubectl apply -f k8s/backend-deployment.yaml
+          kubectl apply -f k8s/frontend-deployment.yaml
+          kubectl apply -f k8s/service.yaml
+          kubectl apply -f k8s/ingress.yaml
+    
