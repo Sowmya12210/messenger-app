@@ -27,6 +27,8 @@ resource "google_container_node_pool" "primary_nodes" {
   node_config {
     machine_type = var.machine_type
     oauth_scopes = ["https://www.googleapis.com/auth/cloud-platform"]
+    disk_type     = "pd-ssd"
+    disk_size_gb  = 60
   }
 
   initial_node_count = var.node_count
