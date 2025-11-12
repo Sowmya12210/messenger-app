@@ -137,7 +137,7 @@ stages:
       inputs:
         targetType: 'inline'
         script: |
-          kubectl create configmap db-configmap --from-file=db/init.sql -n messenger --dry-run=client -o yaml | kubectl apply -f -
+          kubectl create configmap db-configmap --from-file=db\init\init.sql -n messenger --dry-run=client -o yaml | kubectl apply -f -
           kubectl apply -f k8s/db-deployment.yaml
           kubectl apply -f k8s/backend-deployment.yaml
           kubectl apply -f k8s/frontend-deployment.yaml

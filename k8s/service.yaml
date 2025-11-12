@@ -24,7 +24,7 @@ spec:
   ports:
     - port: 3306
       targetPort: 3306
-  type: clusterIP 
+  type: ClusterIP 
 ---
 # Frontend service (external)
 apiVersion: v1
