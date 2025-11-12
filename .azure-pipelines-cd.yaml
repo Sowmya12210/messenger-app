@@ -61,8 +61,7 @@ stages:
             -var="project_id=$(PROJECT_ID)" \
             -var="region=$(REGION)" \
             -var="cluster_name=$(CLUSTER_NAME)" \
-            -var="bucket_name=$(BUCKET_NAME)"
-            -out=tfplan
+            -var="bucket_name=$(BUCKET_NAME)" \
           terraform apply -auto-approve tfplan
           # echo "Setting up credentials..."
           # export GOOGLE_APPLICATION_CREDENTIALS=$(gcpKey.secureFilePath)
