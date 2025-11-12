@@ -54,12 +54,14 @@ stages:
           gcloud auth activate-service-account --key-file=$GOOGLE_APPLICATION_CREDENTIALS
           gcloud config set project $(PROJECT_ID)
             echo " Creating it with Terraform..."
-          terraform init
+          terraform init -backend-config="bucket=$BUCKET_NAME" \
+               -backend-config="prefix=gke-cluster" \
+               -backend-config="credentials=$GCP_APPLICATION_CREDENTIALS"
           terraform plan -out=tfplan \
             -var="project_id=$(PROJECT_ID)" \
             -var="region=$(REGION)" \
             -var="cluster_name=$(CLUSTER_NAME)" \
-            -var="gcs_bucket=$(TF-BUCKET)"
+            -var="bucket_name=$(BUCKET_NAME)"
             -out=tfplan
           terraform apply -auto-approve tfplan
           # echo "Setting up credentials..."
