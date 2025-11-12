@@ -10,10 +10,7 @@ variable "cluster_name" {
   description = "Name of the GKE cluster"
 }
 
-variable "credentials_file" {
-  description = "Path to GCP service account key file"
-  default     = "gcp-key.json"
-}
+
 
 # variable "network_name" {
 #   description = "VPC name"

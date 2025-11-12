@@ -1,8 +1,8 @@
 terraform {
   backend "gcs" {
-    bucket      = "tf-bucket"
+    bucket      = "tf-bucket2"
     prefix      = "gke-cluster"                
-    credentials = var.credentials_file
+    
   }
   required_version = ">= 1.5.0"
 }
