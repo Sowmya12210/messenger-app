@@ -138,9 +138,9 @@ stages:
         targetType: 'inline'
         script: |
           kubectl create configmap db-configmap --from-file=db/init/init.sql -n messenger --dry-run=client -o yaml | kubectl apply -f -
-          kubectl apply -f k8s/db-deployment.yaml
-          kubectl apply -f k8s/backend-deployment.yaml
-          kubectl apply -f k8s/frontend-deployment.yaml
-          kubectl apply -f k8s/service.yaml
-          kubectl apply -f k8s/ingress.yaml
+          kubectl apply -f k8s/db-deployment.yaml -n messenger
+          kubectl apply -f k8s/backend-deployment.yaml -n messenger
+          kubectl apply -f k8s/frontend-deployment.yaml -n messenger
+          kubectl apply -f k8s/service.yaml -n messenger
+          kubectl apply -f k8s/ingress.yaml -n messenger
     
