@@ -33,6 +33,8 @@ spec:
         - name: mysql-storage
           persistentVolumeClaim:
             claimName: db-pvc
+        - name: db-init
+          mountPath: /docker-entrypoint-initdb.d
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
