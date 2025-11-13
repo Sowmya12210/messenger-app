@@ -32,6 +32,11 @@ app.get('/messages', (req, res) => {
     res.json(results);
   });
 });
+// Health check route
+app.get('/health', (req, res) => {
+  res.status(200).send('OK');
+});
+
 
 app.post('/messages', (req, res) => {
   const { text } = req.body;

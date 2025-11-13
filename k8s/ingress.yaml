@@ -4,7 +4,9 @@ metadata:
   name: messenger-ingress
   annotations:
     kubernetes.io/ingress.global-static-ip-name: messenger-static-ip-global
-    
+    kubernetes.io/ingress.class: gce
+    ingress.kubernetes.io/rewrite-target: /messages
+spec:
 spec:
   ingressClassName: gce
   rules:
