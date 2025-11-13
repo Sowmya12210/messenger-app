@@ -20,3 +20,11 @@ spec:
           env:
             - name: BACKEND_URL
               value: "https://messenger.example.com/api"
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 80
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 2
+            failureThreshold: 3

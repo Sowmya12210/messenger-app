@@ -26,6 +26,15 @@ spec:
               value: "rootpassword"
             - name: DB_NAME
               value: "myapp"
+          readinessProbe:
+            httpGet:
+              path: /api
+              port: 5000
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 2
+            failureThreshold: 3
+
 
           # env:
           #   - name: DB_HOST
