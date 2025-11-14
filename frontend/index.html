@@ -152,8 +152,8 @@
     async function loadMessages() {
       list.innerHTML = "";
       try {
-        const res = await fetch("https://messenger.example.com/api");
-        //const res = await fetch(`${BACKEND_URL}/messages`);
+        const res = await fetch('http://backend:5000/messages');
+      
 
         const messages = await res.json();
 
@@ -183,7 +183,7 @@
       if (!text) return;
 
       try {
-        await fetch('https://messenger.example.com/api', {
+        await fetch('http://backend:5000/messages', {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ text })

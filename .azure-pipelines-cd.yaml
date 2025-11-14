@@ -142,5 +142,4 @@ stages:
           kubectl apply -f k8s/backend-deployment.yaml -n messenger
           kubectl apply -f k8s/frontend-deployment.yaml -n messenger
           kubectl apply -f k8s/service.yaml -n messenger
-          kubectl apply -f k8s/ingress.yaml -n messenger
     
