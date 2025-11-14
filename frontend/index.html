@@ -152,7 +152,7 @@
     async function loadMessages() {
       list.innerHTML = "";
       try {
-        const res = await fetch('http://backend:5000/messages');
+        const res = await fetch("http://136.118.169.251/messages");
       
 
         const messages = await res.json();
@@ -183,7 +183,7 @@
       if (!text) return;
 
       try {
-        await fetch('http://backend:5000/messages', {
+        await fetch("http://136.118.169.251/messages", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ text })
