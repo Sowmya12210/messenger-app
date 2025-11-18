@@ -5,16 +5,13 @@ apiVersion: v1
 kind: Service
 metadata:
   name: backend
-  annotations:
-    cloud.google.com/load-balancer-ipv4: "backend-ip"
-  
 spec:
   selector:
     app: backend
   ports:
     - port: 5000
       targetPort: 5000
-  type: LoadBalancer
+  type: ClusterIP
 ---
 # Database service (headless)
 apiVersion: v1
@@ -34,6 +31,8 @@ apiVersion: v1
 kind: Service
 metadata:
   name: frontend
+  annotations:
+    cloud.google.com/load-balancer-ipv4: frontend-static-ip
 spec:
   selector:
     app: frontend
