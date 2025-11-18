@@ -152,7 +152,7 @@
     async function loadMessages() {
       list.innerHTML = "";
       try {
-        const res = await fetch("http://backend-static-ip:5000");
+        const res = await fetch("http://backend:5000/messages");
       
 
         const messages = await res.json();
@@ -185,7 +185,7 @@
       if (!text) return;
 
       try {
-        await fetch("http://backend-static-ip:5000", {
+        await fetch("http://backend:5000/messages", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ text })
