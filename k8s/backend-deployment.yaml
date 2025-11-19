@@ -18,7 +18,7 @@ spec:
         - name: backend
           image: us-west1-docker.pkg.dev/fluted-factor-438905-d2/azure-repo/backend:latest
           ports:
-            - containerPort: 5000
+            - containerPort: 3000
           env:
             - name: DB_HOST
               value: "db"
